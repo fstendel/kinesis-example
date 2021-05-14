@@ -1,0 +1,32 @@
+
+---
+version: '3.4'
+services:
+
+  kinesis:
+    container_name: localstack-kinesis
+    image: localstack/localstack
+    ports:
+      - 4566:4566
+    environment:
+      EDGE_PORT: 4566
+      SERVICES: kinesis,cloudwatch,dynamodb
+      DEFAULT_REGION: eu-central-1
+      HOSTNAME: kinesis
+      HOSTNAME_EXTERNAL: kinesis
+
+
+  kinesis-init-streams:
+    image: garland/aws-cli-docker
+    depends_on:
+      - kinesis
+    environment:
+      AWS_ACCESS_KEY_ID: localstackIgnoresThis
+      AWS_SECRET_ACCESS_KEY: localstackIgnoresThis
+      AWS_DEFAULT_REGION: eu-central-1
+    restart: on-failure
+    healthcheck:
+      start_period: 30s
+    command: >
+      sh -c "aws --endpoint-url http://kinesis:4566/ kinesis create-stream --shard-count 1 --stream-name OrderIngests && \
+         aws --endpoint-url http://kinesis:4566/ kinesis create-stream --shard-count 1 --stream-name OrderNotifications"
